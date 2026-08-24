@@ -135,9 +135,21 @@ Tuning lives in the Terminal app's gear icon:
 | Control | Why you care |
 |---|---|
 | **Memory size** | default is a stingy 1024 MiB — raise it (slider scales ~2/3 of RAM) before running agents + servers |
-| **Keep awake** | screen-off survival timer (up to 1 day) — long builds need it, battery suffers |
+| **Keep awake** | screen-off survival timer — Off / 1m / 5m / 10m / 30m / 1h / 2h / 6h / **1 day**; long builds need it, battery suffers |
 | **Port control** | gate which VM ports are reachable |
 | **Graphics acceleration** | Pixel 10 Pro only; everyone else gets the software renderer |
+
+**Screen-timeout reality check:** without Keep awake, Android suspends the whole VM the moment the screen blanks or the Terminal app is swiped away — every process inside dies silently (we lost cockpit + bridge this way, twice). Complementary Android-side options: *Settings → Display → Screen timeout* (stretch it to 30 min for work sessions), and disabling adaptive battery for the Terminal app. Keep awake is the only setting that keeps the VM itself alive past screen-off — everything else just delays the inevitable.
+
+## The nomad service 🔁
+
+Both long-running services now ship as systemd units (`ocbootstrap-nomad.service`, `ocbootstrap-bridge.service`) instead of fragile `setsid nohup` incantations: `Restart=always` with a short backoff, env loaded from `.env`, enabled at `multi-user.target`. Any crash, OOM eviction, or VM reboot self-heals within seconds of the VM coming back — no human, no agent, no ceremony:
+
+```bash
+sudo systemctl enable --now ocbootstrap-bridge ocbootstrap-nomad
+systemctl status ocbootstrap-nomad     # should be active; logs via journalctl -u ocbootstrap-nomad
+```
+
 
 Kernel-level surprises we've confirmed or inherited from the field:
 
