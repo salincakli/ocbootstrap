@@ -337,12 +337,22 @@ and the pipeline we bled for became a museum piece. Still the best education per
 ### Act II — the migration evening 🚀
 
 | Time | Event |
-|---||
+|---|---|
 | T+0 | Found the target: a half-finished Aug-10 Temps import, disk 100% full |
 | +15 min | 84 GB of stale Docker images pruned; crash-looping timescaledb recovered |
 | +1 h | Backend deployed from repo Dockerfile after fixing preset config, exposedPort, and DB hostnames |
 | +2 h | Free LB provisioned via API, LE cert chain uploaded as bundle, DNS flipped through it |
 | same night | **Customer stream running on the new stack** — health, OAuth, SSE all verified |
+
+What fought back during those two hours, in proper gotcha format:
+
+| It fought back | We won with |
+|---|---|
+| python preset built via Nixpacks → `uv sync` blew up the deploy | switched to `dockerfile` preset with `dockerfilePath` + `buildContext` written straight into preset config |
+| app healthy but readiness probes never green | Temps probes the per-environment `exposedPort`, not the project toggle — set it to the real listen port |
+| DB/Redis hostnames dead on arrival | Coolify-style short aliases don't exist here — env URLs rewritten to full container names with native credentials |
+| free LB 503'd on a perfectly healthy origin | health checks can't send vhost SNI → `tcp` checks + nginx shim terminating TLS with correct SNI |
+| ACME challenge never reached the origin | added a port-80 frontend routed to the plain-HTTP listener — challenges answered, cert issued |
 
 ### Act III — the deletion incident 🔥
 
