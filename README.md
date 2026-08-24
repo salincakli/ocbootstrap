@@ -246,6 +246,10 @@ ocbootstrap/
 - CodeNomad is password-gated and HTTPS-only, but self-signed: fine for your LAN, not for the open internet (put a reverse proxy + real cert in front if you must).
 - The microVM sandbox has no isolation guarantees beyond QEMU process boundaries — treat it as convenience, not a jail.
 
+## Related links
+
+- [claude-code-android AVF guide](https://github.com/ferrumclaudepilgrim/claude-code-android/blob/main/docs/avf-guide.md) — deep dive into the Android Virtualization Framework that makes the Debian VM possible
+
 ## Credits & thanks
 
 - [opencode](https://opencode.ai) — the terminal AI agent doing the driving
