@@ -1,0 +1,15 @@
+[Unit]
+Description=CodeNomad cockpit
+After=network.target ocbootstrap-bridge.service
+
+[Service]
+User=droid
+WorkingDirectory=/home/droid
+EnvironmentFile=/home/droid/ocbootstrap/.env
+Environment=PATH=/home/droid/.opencode/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/npx -y @neuralnomads/codenomad --host 0.0.0.0 --password ${CODENOMAD_SERVER_PASSWORD}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Fish Audio TTS/STT bridge
+After=network.target
+
+[Service]
+EnvironmentFile=/home/droid/ocbootstrap/.env
+ExecStart=/usr/bin/python3 /home/droid/ocbootstrap/fish-tts-bridge.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
