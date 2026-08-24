@@ -64,23 +64,30 @@ Any aarch64 Linux box works — a Pixel with a Debian VM, a Raspberry Pi 5, an o
 sudo apt install -y python3 curl cpio busybox-static qemu-system-arm \
                     linux-image-cloud-arm64 nodejs npm
 
-# 1. Secrets — copy the template and fill in your own values
+# 1. opencode — the AI operator (pick any one install method)
+curl -fsSL https://opencode.ai/install | bash     # or: npm i -g opencode-ai
+opencode                                           # full TUI
+opencode --mini                                    # minimal interactive interface
+opencode web                                       # headless server + browser UI
+# CodeNomad needs the binary on PATH; we keep it at ~/.opencode/bin/opencode
+
+# 2. Secrets — copy the template and fill in your own values
 cp .env.example .env && $EDITOR .env
 
-# 2. MicroVM sandbox (~1 MB, boots in seconds under TCG emulation)
+# 3. MicroVM sandbox (~1 MB, boots in seconds under TCG emulation)
 cd microvm && ./boot.sh          # interactive BusyBox shell
 # scripted mode: put commands in initfs/cmd, rebuild initramfs, run ./boot.sh
 
-# 3. Temps CLI against your own instance (or temps.sh cloud)
+# 4. Temps CLI against your own instance (or temps.sh cloud)
 npm install -g @temps-sdk/cli
 set -a; . ./.env; set +a
 TEMPS_API_URL=$TEMPS_API_BASE_URL TEMPS_TOKEN=$TEMPS_API_KEY temps whoami
 
-# 4. Text-to-speech bridge (OpenAI schema → Fish Audio native API)
+# 5. Text-to-speech bridge (OpenAI schema → Fish Audio native API)
 setsid nohup python3 fish-tts-bridge.py > /tmp/tts-bridge.log 2>&1 < /dev/null &
 curl -s http://127.0.0.1:8787/healthz    # -> ok
 
-# 5. CodeNomad cockpit, reachable from your LAN
+# 6. CodeNomad cockpit, reachable from your LAN
 export PATH="$HOME/.opencode/bin:$PATH"
 setsid nohup npx -y @neuralnomads/codenomad --host 0.0.0.0 \
   --password "$CODENOMAD_SERVER_PASSWORD" --launch > /tmp/codenomad.log 2>&1 < /dev/null &
