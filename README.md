@@ -217,6 +217,78 @@ temps projects config -p my-app --auto-deploy          # deploy on push
 
 Or skip git entirely (like our `sandbox` project): create with `--manual --source-type docker_image` and push prebuilt images via `temps deploy:image`.
 
+### More mileage from the same binary 🎯
+
+Every feature below ships inside Temps already — no add-on services, no extra invoices:
+
+- **Push-to-deploy portfolio** — one project per repo; `nextjs`/`nodejs` presets build straight from git, custom domains get Let's Encrypt certificates issued automatically
+- **CI-built images without a registry middleman** — build in GitHub Actions, push the image with `temps deploy:image`, done (our `sandbox` project lives this way)
+- **Staging ↔ production symmetry** — clone a project, point it at a `staging` branch, flip `--auto-deploy` off and promote manually when QA passes
+- **Monitoring without Pingdom** — built-in monitors watch every deployed service; pair them with ADB battery/thermal checks for full pocket-datacenter observability
+- **Analytics without the cookie banner** — first-party, privacy-friendly stats per project; retire Plausible/Fathom/GA4 entirely
+- **Hackathon & client-demo mode** — `--manual` project + image push puts a demo on a real HTTPS domain in minutes, deleted the moment the meeting ends
+- **One VPS, many tenants** — a single Rust binary hosts all of it; no per-seat math, no credit spreadsheets
+
+### Real-world duty: what the casual stack charges 💸
+
+Take one plausible workload — a freelancer running three client sites, two side-project APIs, staging copies of each, plus monitoring and analytics:
+
+| # | Job to be done | Casual stack | Street price/mo | This stack | Why ours is $0 |
+|---|---|---|---|---|---|
+| 1 | Next.js client apps ×3 | Vercel Pro (1 seat) | ~$20 | `nextjs` preset | builds run on the box you already have |
+| 2 | Static marketing sites ×3 | Netlify Pro | ~$20 | `static` preset | no bandwidth credits to ration |
+| 3 | Side-project APIs ×2 | Railway Hobby + usage overage | ~$15–35 | `dockerfile` preset | idle containers don't bill by the GB-hour here |
+| 4 | Staging environments ×5 | separate paid tier / per-env pricing | ~$10–20 | cloned project, `--auto-deploy` off | staging is just another project |
+| 5 | Deploy previews per PR | Netlify credits (15/deploy) | metered | git integration | every push is a full deploy anyway |
+| 6 | Uptime monitors | Pingdom Starter | ~$15 | built-in monitors | ships in the binary |
+| 7 | Privacy-friendly analytics | Plausible Starter → Growth | ~$9–19 | built-in analytics | first-party, per-project, cookie-free |
+| 8 | TLS certificates | paywalled tiers / certbot babysitting | $0–10 | automatic Let's Encrypt | issued per domain on deploy |
+| | **Monthly damage** | | **~$90–140** | **~$0 marginal** | |
+
+#### Where casual stacks hide the knife 🔪
+
+- **Per-seat math**: on Vercel/Netlify Pro, *every* dev who pushes to a connected repo becomes a ~$20/member invoice — a 5-person agency pays $160+/mo before a single byte is served
+- **Credit opacity**: Netlify's 2025+ credit model meters deploys, bandwidth, functions and even PR previews separately — predicting a bill needs a spreadsheet
+- **Idle ≠ free**: Railway bills resources per second whether traffic arrives or not — one sleepy 1 vCPU / 1 GB service runs ~$30/mo at utility rates
+- **Feature paywalls**: server-side analytics is a $9/site add-on; staging tiers, log retention and SLAs all live above the entry price
+- **Overage roulette**: a front-page-of-Hacker-News day can turn your "free" tier into an invoice
+
+#### Three real-world profiles 📊
+
+| Profile | Stack shape | Casual stack/mo | This stack/mo | Kept per year |
+|---|---|---|---|---|
+| **Solo hobbyist** | 1 app + 1 static site + analytics | ~$35–45 | ~$0 | ~$420–540 |
+| **Freelancer** (table above) | 5 projects + staging + monitors | ~$90–140 | ~$0 marginal | ~$1,080–1,680 |
+| **Small team** (5 devs, 10 sites) | per-seat Pro plans + credit overages | ~$200–330 | one shared VPS | ~$2,400–3,900 |
+
+#### The rest of the stack is a SaaS graveyard 🪦
+
+Temps only retires the hosting invoice — every other tool in this workspace buries its own subscription category:
+
+| Our gear | SaaS it deprecates | Street price avoided/mo |
+|---|---|---|
+| `opencode` agent (bring-your-own — even free — models) | Copilot Pro · Cursor Pro · ChatGPT Plus as pair-programmer | ~$10–20/dev |
+| `opencode serve` + cron ("CI-style automation is just prompts plus cron") | Zapier/Make glue automation, paid CI runner minutes | ~$20–30 |
+| CodeNomad cockpit (multi-session UI over LAN HTTPS) | GitHub Codespaces hours, ngrok/tunneling Pro tiers, remote-desktop dev tools | ~$8–20 |
+| `fish-tts-bridge.py` → free `s2.1-pro-free` model | ElevenLabs / OpenAI TTS credits behind any voice feature | ~$5–22 |
+| QEMU microVM sandbox (~1 MB rootfs, boots in seconds) | disposable cloud VMs & sandbox-as-a-service for risky experiments | ~$4–15 |
+| ADB hardware bridge (sensors, GPS, camera, screenshots) | device-farm smoke tests (BrowserStack-class app testing) | ~$12–39 |
+| **Subtotal** | | **~$60–145** |
+
+#### Grand total, all subscriptions dead ☠️
+
+For the freelancer workload above, the full casual stack — hosting *plus* tooling — ran **~$150–285/month**. This stack runs it at **~$0 marginal** (+ an optional $4–6/mo VPS under Temps):
+
+| Profile | Casual stack, all-in/mo | This stack/mo | Kept per year |
+|---|---|---|---|
+| Solo hobbyist | ~$95–125 | ~$0 | ~$1,100–1,500 |
+| Freelancer | ~$150–285 | ~$0 marginal | ~$1,800–3,400 |
+| Small team (5 devs) | ~$350–600 | one shared VPS | ~$4,200–7,200 |
+
+Even counting a dedicated small Hetzner-class box (~$4–6/mo), net savings land around **$1,000–1,500/year solo, $1,700–3,300/year freelancing, $4,100+/year for a team** — enough to buy the Pixel 8a running this entire show two to four times over, every single year.
+
+*(Street prices rounded from vendor pages, verified August 2026 — Copilot Pro $10, Cursor Pro $20, Plausible from $9, Pingdom from $15, Netlify/Vercel Pro $20/seat, Railway Hobby $5. Your mileage will vary; your invoices won't.)*
+
 ## Gotchas we hit so you don't have to
 
 - **No KVM passthrough** in the Android-hosted VM → Firecracker/cloud-hypervisor are out; QEMU TCG still makes a fine toy sandbox.
@@ -257,7 +329,7 @@ ocbootstrap/
 - [NeuralNomadsAI/CodeNomad](https://github.com/NeuralNomadsAI/CodeNomad) — the cockpit
 - [fish.audio](https://fish.audio) — generous free-tier TTS (`s2.1-pro-free`)
 - [ferrumclaudepilgrim/claude-code-android](https://github.com/ferrumclaudepilgrim/claude-code-android) — the AVF field guide that shaped our "Under the hood" and ADB sections
-- Arm® Cortex-X3 / Tensor G3 documentation communities
+- [Arm® Cortex-X3 / Tensor G3 documentation communities](https://www.androidauthority.com/pixel-8-tensor-g3-specs-3331398/)
 
 ---
 
