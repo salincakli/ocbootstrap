@@ -304,6 +304,61 @@ Even counting a dedicated small Hetzner-class box (~$4–6/mo), net savings land
 
 *(Street prices rounded from vendor pages, verified August 2026 — Copilot Pro $10, Cursor Pro $20, Plausible from $9, Pingdom from $15, Netlify/Vercel Pro $20/seat, Railway Hobby $5. Your mileage will vary; your invoices won't.)*
 
+## Production proof: we moved a live API onto Temps 🏭
+
+This stack isn't a toy demo — the same weekend it was built, it absorbed a **full production
+migration**: a paid-customer API ([surstreaming.live](https://surstreaming.live), TikTok live-stream
+tooling, SSE-heavy, 1 paying customer + 30+ trials) moved off Coolify-on-Vultr onto Temps-on-UpCloud,
+executed end-to-end by an AI operator over SSH and REST APIs across three servers.
+
+### The architecture we landed on
+
+```
+api.surstreaming.live ──CNAME──► UpCloud Managed LB (Essentials tier — $0/mo)
+                                   │  TLS termination (LE bundle)
+                                   ├── :443 → Temps origin :8443   ✅ live
+                                   ├── :80  → Temps ACME/redirects ✅ live
+                                   └── old provider member: kept warm, DISABLED
+                                        (rollback = two API calls, zero DNS changes)
+```
+
+The Essentials load balancer is **permanently free** (UpCloud Essentials program) — failover,
+health checks and instant member toggles for $0. Rollback is no longer a DNS wait; it's an
+enable/disable flip.
+
+### Timeline of one evening
+
+| Time | Event |
+|---|---|
+| T+0 | Found the target: a half-finished Aug-10 Temps import, disk 100% full |
+| +15 min | 84 GB of stale Docker images pruned; crash-looping timescaledb recovered |
+| +1 h | Backend deployed from repo Dockerfile after fixing preset config, exposedPort, and DB hostnames |
+| +2 h | Free LB provisioned via API, LE cert chain uploaded as bundle, DNS flipped through it |
+| same night | **Customer stream running on the new stack** — health, OAuth, SSE all verified |
+
+### The incident that justified the whole runbook
+
+Mid-migration, both database containers (and volumes) got deleted by accident. Total recovery
+time: **~5 minutes** — because the migration runbook had already saved a config snapshot and a
+fresh `pg_dump`. Recreate containers from inspect JSON → restore dump → restart app → 39 users,
+0 errors. The nightly backup cron that exists today was born that night.
+
+### Gotchas worth their weight in gold (server-side edition)
+
+| Gotcha | Fix |
+|---|---|
+| Temps' python preset builds via Nixpacks (`uv sync` fails) | use the repo's own Dockerfile preset with `dockerfilePath` in `preset_config` |
+| Environment-level `exposedPort` must match the app port or readiness probes never pass | set per-environment, not just project |
+| Docker-DNS names don't resolve cross-node | drain worker nodes that can't run the app, or fix env hosts |
+| Custom domains: proxy rejects unknown-SNI handshakes until cert exists | register domain (`POST /api/domains`, http-01) → provision → finalize; needs a port-80 frontend path to the origin |
+| UpCloud LB health checks can't send vhost SNI | strict-TLS origins need `tcp` checks or an SNI-aware shim |
+| Cert bundles are base64 PEMs — leaf split from intermediates, newline-joined | encode carefully or validation rejects |
+| IPv6-only worker can't reach relay (no AAAA) | join in direct mode over private network + `/etc/hosts` pin |
+| SELinux blocks scp'd binaries in systemd units | `chcon -t bin_t` |
+| Out-of-band `docker restart` latches UI into "degraded" | always redeploy via pipeline |
+
+Full runbook lives in the ops workspace; the pattern generalizes to any Temps deployment.
+
 ## Gotchas we hit so you don't have to
 
 - **No KVM passthrough** in the Android-hosted VM → Firecracker/cloud-hypervisor are out; QEMU TCG still makes a fine toy sandbox.
@@ -346,6 +401,7 @@ ocbootstrap/
 - [gotempsh/temps](https://github.com/gotempsh/temps) — the one-binary PaaS
 - [NeuralNomadsAI/CodeNomad](https://github.com/NeuralNomadsAI/CodeNomad) — the cockpit
 - [fish.audio](https://fish.audio) — generous free-tier TTS (`s2.1-pro-free`)
+- [surstreaming.live](https://surstreaming.live) — production API running on this exact stack since August 2026
 - [ferrumclaudepilgrim/claude-code-android](https://github.com/ferrumclaudepilgrim/claude-code-android) — the AVF field guide that shaped our "Under the hood" and ADB sections
 - [Arm® Cortex-X3 / Tensor G3 documentation communities](https://www.androidauthority.com/pixel-8-tensor-g3-specs-3331398/)
 
