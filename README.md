@@ -98,9 +98,76 @@ setsid nohup npx -y @neuralnomads/codenomad --host 0.0.0.0 \
 
 CodeNomad only speaks the OpenAI `/v1/audio/speech` schema; Fish Audio only accepts its native `POST /v1/tts` with a `model:` header. A ~100-line Python bridge translates between them — including mapping OpenAI-style `voice` fields to Fish Audio `reference_id`s — so the cockpit's 🔊 button talks via the **free** `s2.1-pro-free` model (83 languages, fair-use unlimited).
 
-## Crostini wizardry & caveats 🧞
+## opencode as a service & preemptive tricks ⚡
 
-This workspace lives inside a **Debian 13 VM hosted by Android** (kernel `6.12.89-android16`, crosvm lineage — `systemd-detect-virt` reports `none`). Quirks you'll meet on the same path:
+opencode isn't just a TUI — it's a server you can keep running and reuse:
+
+```bash
+# Headless service mode
+setsid nohup opencode serve --port 4096 > /tmp/opencode-serve.log 2>&1 < /dev/null &
+opencode attach http://127.0.0.1:4096        # reconnect from any terminal
+
+# Browser mode (server + web UI in one)
+opencode web
+
+# ACP server for editor integrations (Zed etc.)
+opencode acp
+```
+
+Preemptive-work patterns that pay off on a pocket datacenter:
+
+- **Keep it warm**: services started with `setsid nohup … < /dev/null &` survive your shell — boot your stack once (serve + bridge + cockpit), attach on demand.
+- **Parallel agents > one busy agent**: open multiple opencode sessions as CodeNomad tabs, each pinned to its own **git worktree** (`codenomad` creates them under `.codenomad/worktrees`) — no merge-gridlock between tasks.
+- **Batch the slow stuff**: bake commands into the microVM's `initfs/cmd`, rebuild the initramfs, fire `./boot.sh`, and collect results — emulation runs while you do something else.
+- **Watch tasks, not terminals**: CodeNomad surfaces background tasks and child sessions, so long builds can run unattended while you queue the next job.
+- **Script the agent itself**: every trick on this page was executed by opencode via its CLI tools — CI-style automation is just prompts plus cron.
+
+## Under the hood: this is AVF, not your average chroot 🧞
+
+The Debian VM isn't a container or proot trick — it's Google's **Android Virtualization Framework**: crosvm (the ChromeOS VMM) driven by VirtualizationService, isolated by pKVM. The stock path is the **Terminal app** on any Pixel 6+ running Android 16+ (*Developer options → Linux development environment*); Snapdragon devices only expose protected VMs and are locked out on stock firmware.
+
+Tuning lives in the Terminal app's gear icon:
+
+| Control | Why you care |
+|---|---|
+| **Memory size** | default is a stingy 1024 MiB — raise it (slider scales ~2/3 of RAM) before running agents + servers |
+| **Keep awake** | screen-off survival timer (up to 1 day) — long builds need it, battery suffers |
+| **Port control** | gate which VM ports are reachable |
+| **Graphics acceleration** | Pixel 10 Pro only; everyone else gets the software renderer |
+
+Kernel-level surprises we've confirmed or inherited from the field:
+
+- **`CONFIG_SYSVIPC` is off** — `fio` won't run, some multiprocessing shims break; benchmark with `dd`, parallelize with forks
+- **nftables silently fails** — use `iptables-legacy` (`update-alternatives --set iptables /usr/sbin/iptables-legacy`)
+- **Monolithic kernel**: no module loading, `/lib/modules/` empty — what's compiled in is all you get
+- **Unclean shutdown = "VM damaged"**, full reinstall. Commit early, push often, treat storage as semi-ephemeral
+- **VM IP rotates every boot** — never hardcode it (our cockpit URL is a case in point)
+- Cellular data needs *Apps → Terminal → Unrestricted mobile data*; Wi-Fi just works
+- Security defaults are loose: `droid` has NOPASSWD sudo and a known cloud-init password — `sudo passwd droid` first
+
+## ADB superpowers: phone hardware from inside the VM 📡
+
+The VM is sandboxed away from sensors and cameras — but **wireless ADB bridges that gap**, turning the phone into a peripheral farm for your workloads:
+
+1. Phone: *Developer options → Wireless debugging → Pair device with pairing code*
+2. In the VM: `adb pair <phone-wifi-ip>:<pair-port> <code>` (use split-screen — the code expires fast)
+3. `adb connect <phone-wifi-ip>:<port>` — port rotates per session; pairing itself survives VM reboots
+
+Real-world workloads and what they demand:
+
+| Workload | Command | Requirement / gotcha |
+|---|---|---|
+| Battery-aware scheduling | `adb shell dumpsys battery` | none — level, voltage, temperature in one shot; pause heavy jobs under 20% |
+| Thermal throttle guard | `adb shell dumpsys thermalservice` | none — check before benchmarks (our Tensor runs hot) |
+| Host log triage | `adb logcat` | none — Android logs stream straight into agent sessions |
+| Sensor inventory (42!) | `adb shell dumpsys sensorservice` | enumeration only; live X/Y/Z streaming still needs a helper app or `getevent` parsing |
+| GPS fix | `adb shell dumpsys location \| grep last` | location services on; ~11 m accuracy observed |
+| Screenshot / screen record | `screencap -p` · `screenrecord --time-limit N` | pulls to VM at ~80 MB/s — great for docs and bug reports |
+| UI automation | `adb shell input tap/swipe/text` | coordinate-based; 10-point multitouch reported |
+| Drive a browser test on the host | `am start -a android.intent.action.VIEW -d <url>` | pairs beautifully with a Temps deployment: deploy → open on same device → screencap proof |
+| Camera capture | `am start -a IMAGE_CAPTURE --eu output file:///sdcard/photo.jpg` | must pass an output URI; plain capture gives you a viewfinder but no file |
+
+Stack these: our agent can run a Temps deploy, watch battery/thermal headroom, launch the result on the host browser, screenshot it, and attach the PNG to the PR — all from inside the VM.
 
 - **Almost bare image**: only Python 3 is preinstalled. Everything else (`nodejs npm git cpio busybox-static qemu-system-arm linux-image-cloud-arm64`) comes from `apt` — all arm64, all fine.
 - **No `/dev/kvm`**: the host doesn't hand nested virt down. Firecracker/cloud-hypervisor won't run; QEMU TCG emulation will (slowly).
@@ -185,6 +252,7 @@ ocbootstrap/
 - [gotempsh/temps](https://github.com/gotempsh/temps) — the one-binary PaaS
 - [NeuralNomadsAI/CodeNomad](https://github.com/NeuralNomadsAI/CodeNomad) — the cockpit
 - [fish.audio](https://fish.audio) — generous free-tier TTS (`s2.1-pro-free`)
+- [ferrumclaudepilgrim/claude-code-android](https://github.com/ferrumclaudepilgrim/claude-code-android) — the AVF field guide that shaped our "Under the hood" and ADB sections
 - Arm® Cortex-X3 / Tensor G3 documentation communities
 
 ---
