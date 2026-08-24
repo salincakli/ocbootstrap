@@ -308,21 +308,47 @@ The Essentials load balancer is **permanently free** (UpCloud Essentials program
 health checks and instant member toggles for $0. Rollback is no longer a DNS wait; it's an
 enable/disable flip.
 
-### Timeline of one evening
+### Act I — the log-drain marathon 🪵
+
+Before any migration talk, the evening started with an innocent request: *"send our logs somewhere."*
+Coolify's drain UI was greyed out, so the autopsy began:
+
+| Discovery | Implication |
+|---|---|
+| The drain config had the **wrong secret** (a paste accident), broken indentation, and no `[INPUT]` block | it could never have worked |
+| Coolify's Sentinel container contains **no fluent-bit** — draining runs in a separate `coolify-log-drain` container | the thing we were debugging wasn't the thing doing the work |
+| That drain container isn't attached to the app network and can't resolve the sink | strict-TLS sinks are unreachable by design |
+
+So we built our own pipeline. Fluent Bit first — died on a missing `docker` filter plugin.
+Vector second — survived seven more failure modes on its way to green:
+
+1. pinned image tag didn't exist → pull failed silently at deploy
+2. Debian image runs as non-root → Docker socket unreadable → agent aborts
+3. `%20` in URIs is parsed as strftime → inserts malformed
+4. its http sink can't speak ClickHouse dialect properly → switched to the native `clickhouse` sink
+5. sink doesn't send `date_time_input_format=best_effort` → RFC3339 timestamps rejected
+6. timestamps serialize unquoted → reformatted explicitly via VRL
+7. leftover fields crash JSONEachRow typing → event rewritten down to exactly four columns
+
+Green meant: every container's stdout flowing into ClickHouse, browsable in Grafana within seconds,
+14-day TTL. And then — plot twist — production migrated to Temps, which ships observability natively,
+and the pipeline we bled for became a museum piece. Still the best education per kilobyte we ever shipped.
+
+### Act II — the migration evening 🚀
 
 | Time | Event |
-|---|---|
+|---||
 | T+0 | Found the target: a half-finished Aug-10 Temps import, disk 100% full |
 | +15 min | 84 GB of stale Docker images pruned; crash-looping timescaledb recovered |
 | +1 h | Backend deployed from repo Dockerfile after fixing preset config, exposedPort, and DB hostnames |
 | +2 h | Free LB provisioned via API, LE cert chain uploaded as bundle, DNS flipped through it |
 | same night | **Customer stream running on the new stack** — health, OAuth, SSE all verified |
 
-### The incident that justified the whole runbook
+### Act III — the deletion incident 🔥
 
 Mid-migration, both database containers (and volumes) got deleted by accident. Total recovery
-time: **~5 minutes** — because the migration runbook had already saved a config snapshot and a
-fresh `pg_dump`. Recreate containers from inspect JSON → restore dump → restart app → 39 users,
+time: **~5 minutes** — because the runbook had already saved a config snapshot and a fresh
+`pg_dump`. Recreate containers from inspect JSON → restore dump → restart app → 39 users,
 0 errors. The nightly backup cron that exists today was born that night.
 
 ### Gotchas worth their weight in gold (server-side edition)
