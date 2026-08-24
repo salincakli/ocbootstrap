@@ -98,6 +98,58 @@ setsid nohup npx -y @neuralnomads/codenomad --host 0.0.0.0 \
 
 CodeNomad only speaks the OpenAI `/v1/audio/speech` schema; Fish Audio only accepts its native `POST /v1/tts` with a `model:` header. A ~100-line Python bridge translates between them — including mapping OpenAI-style `voice` fields to Fish Audio `reference_id`s — so the cockpit's 🔊 button talks via the **free** `s2.1-pro-free` model (83 languages, fair-use unlimited).
 
+## Crostini wizardry & caveats 🧞
+
+This workspace lives inside a **Debian 13 VM hosted by Android** (kernel `6.12.89-android16`, crosvm lineage — `systemd-detect-virt` reports `none`). Quirks you'll meet on the same path:
+
+- **Almost bare image**: only Python 3 is preinstalled. Everything else (`nodejs npm git cpio busybox-static qemu-system-arm linux-image-cloud-arm64`) comes from `apt` — all arm64, all fine.
+- **No `/dev/kvm`**: the host doesn't hand nested virt down. Firecracker/cloud-hypervisor won't run; QEMU TCG emulation will (slowly).
+- **`/tmp` is tmpfs (~half your RAM)**: fast, but disk benchmarks against it measure RAM, and anything left there dies on reboot. Keep durable scratch on `$HOME`.
+- **Disk is virtio** (`vda`) and swap is **zram** — snappy, but fsync'd writes land around ~180 MB/s.
+- **GUI runs through Weston**: GUI apps need Wayland display env vars set; headless servers (CodeNomad, bridges) are happier targets anyway.
+- **BogoMIPS lies** (reports 49.15) — trust benchmarks, not boot messages.
+
+## CodeNomad SideCars 🔌
+
+Any local web tool can become a cockpit tab: give CodeNomad a `127.0.0.1:<port>` service, a base path `/sidecars/<id>`, and a prefix mode (**preserve** forwards `/sidecars/<id>/...` upstream, **strip** removes it).
+
+```bash
+# VSCode in a tab (openvscode-server)
+docker run -it --init -p 8000:3000 -v "${HOME}:${HOME}:cached" -e HOME=${HOME} \
+  gitpod/openvscode-server --server-base-path /sidecars/vscode
+# SideCar: name=VSCode  port=http://127.0.0.1:8000  base=/sidecars/vscode  mode=preserve
+
+# Terminal in a tab (ttyd)
+ttyd --writable zsh
+# SideCar: name=Terminal  port=http://127.0.0.1:7681  base=/sidecars/terminal  mode=strip
+```
+
+The TTS bridge from this repo is a natural SideCar companion too — voice settings live in the cockpit's Speech panel and hit our OpenAI-compatible bridge automatically via env vars.
+
+## Temps presets & `preset_config` ⚙️
+
+Temps builds projects through presets — `nextjs`, `nodejs`, `static`, `dockerfile`, `dockercompose`. The build recipe travels as JSON:
+
+```json
+{
+  "preset": "dockerfile",
+  "preset_config": {
+    "preset": "dockerfile",
+    "dockerfilePath": "deploy/docker/run/Dockerfile",
+    "buildContext": "."
+  }
+}
+```
+
+Set it from the CLI when wiring git:
+
+```bash
+temps projects git -p my-app --owner myorg --repo myrepo --branch main --preset dockerfile
+temps projects config -p my-app --auto-deploy          # deploy on push
+```
+
+Or skip git entirely (like our `sandbox` project): create with `--manual --source-type docker_image` and push prebuilt images via `temps deploy:image`.
+
 ## Gotchas we hit so you don't have to
 
 - **No KVM passthrough** in the Android-hosted VM → Firecracker/cloud-hypervisor are out; QEMU TCG still makes a fine toy sandbox.
