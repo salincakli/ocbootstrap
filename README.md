@@ -94,6 +94,21 @@ setsid nohup npx -y @neuralnomads/codenomad --host 0.0.0.0 \
 # browse https://<device-ip>:9898  (self-signed cert — accept the warning)
 ```
 
+### Teach your agent everything: install the skill 🧠
+
+This repo ships its knowledge as an [opencode skill](https://opencode.ai/docs/skills/) — stack commands, device quirks and all ten hard rules, condensed for any agent session:
+
+```bash
+# project-scoped — already at .opencode/skills/ocbootstrap/, just run opencode in this repo:
+opencode
+
+# or install globally, available from any directory:
+mkdir -p ~/.config/opencode/skills
+cp -r .opencode/skills/ocbootstrap ~/.config/opencode/skills/
+```
+
+Skills load at startup — restart opencode after copying.
+
 ### How the TTS trick works
 
 CodeNomad only speaks the OpenAI `/v1/audio/speech` schema; Fish Audio only accepts its native `POST /v1/tts` with a `model:` header. A ~100-line Python bridge translates between them — including mapping OpenAI-style `voice` fields to Fish Audio `reference_id`s — so the cockpit's 🔊 button talks via the **free** `s2.1-pro-free` model (83 languages, fair-use unlimited).
@@ -305,6 +320,9 @@ ocbootstrap/
 ├── README.md              ← you are here
 ├── RUNBOOK.md             ← living device doc: specs, benchmarks, status snapshots
 ├── .env.example           ← template for secrets (real .env is gitignored!)
+├── .opencode/
+│   └── skills/
+│       └── ocbootstrap/SKILL.md ← installable opencode skill: stack ops, condensed
 ├── fish-tts-bridge.py     ← OpenAI ↔ Fish Audio TTS translator
 └── microvm/
     ├── boot.sh            ← boot the sandbox (-M virt, 2 vCPU, 512 MB)
