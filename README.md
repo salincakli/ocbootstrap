@@ -23,18 +23,7 @@ Total marginal cost: **$0/month**.
 
 ## Architecture
 
-```
-        ┌─────────────────────────── Pixel 8a (Tensor G3) ───────────────────────────┐
-        │  Android 16 host                                                           │
-        │   └─ Debian 13 VM (aarch64, 3.4 GiB RAM, virtio disk)                      │
-        │       ├─ opencode agent ◄──┐                                               │
-        │       ├─ temps CLI ────────┼──► https://up.sahin.tech  (Temps PaaS, VPS)   │
-        │       ├─ CodeNomad :9898 ──┤     ├─ 9 projects, monitors, deploys           │
-        │       │    ▲ LAN browser   ┘     └─ "sandbox" project                    │
-        │       ├─ fish-tts-bridge :8787 ──► api.fish.audio (s2.1-pro-free)         │
-        │       └─ QEMU microVM (-M virt, 512 MB) ── throwaway shell                │
-        └────────────────────────────────────────────────────────────────────────────┘
-```
+![ocbootstrap architecture](docs/architecture.svg)
 
 ## The hardware
 
@@ -313,14 +302,7 @@ executed end-to-end by an AI operator over SSH and REST APIs across three server
 
 ### The architecture we landed on
 
-```
-api.surstreaming.live ──CNAME──► UpCloud Managed LB (Essentials tier — $0/mo)
-                                   │  TLS termination (LE bundle)
-                                   ├── :443 → Temps origin :8443   ✅ live
-                                   ├── :80  → Temps ACME/redirects ✅ live
-                                   └── old provider member: kept warm, DISABLED
-                                        (rollback = two API calls, zero DNS changes)
-```
+![production topology](docs/production-topology.svg)
 
 The Essentials load balancer is **permanently free** (UpCloud Essentials program) — failover,
 health checks and instant member toggles for $0. Rollback is no longer a DNS wait; it's an

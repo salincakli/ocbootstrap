@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="600" viewBox="0 0 940 600" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">
+  <defs>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#58a6ff"/></marker>
+    <marker id="arr-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d29922"/></marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/></marker>
+  </defs>
+
+  <rect width="940" height="600" rx="12" fill="#0d1117"/>
+  <text x="470" y="34" text-anchor="middle" fill="#8b949e" font-size="13">everything runs on the phone · total marginal cost $0/month</text>
+
+  <!-- Pixel 8a -->
+  <rect x="24" y="56" width="568" height="524" rx="14" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="48" y="88" fill="#e6edf3" font-size="16" font-weight="bold">📱 Pixel 8a — Tensor G3</text>
+  <text x="48" y="108" fill="#8b949e" font-size="12">Android 16 host</text>
+
+  <!-- Debian VM -->
+  <rect x="44" y="124" width="528" height="436" rx="10" fill="#0d1117" stroke="#388bfd" stroke-opacity="0.45" stroke-width="1.5"/>
+  <text x="64" y="152" fill="#58a6ff" font-size="14" font-weight="bold">Debian 13 VM</text>
+  <text x="196" y="152" fill="#8b949e" font-size="12">aarch64 · 3.4 GiB RAM · virtio</text>
+
+  <!-- opencode agent -->
+  <rect x="68" y="176" width="230" height="56" rx="8" fill="#161b22" stroke="#bc8cff" stroke-width="1.2"/>
+  <text x="183" y="200" text-anchor="middle" fill="#bc8cff" font-size="13" font-weight="bold">opencode agent</text>
+  <text x="183" y="218" text-anchor="middle" fill="#8b949e" font-size="11">the AI operator driving everything</text>
+
+  <!-- temps CLI -->
+  <rect x="68" y="256" width="230" height="56" rx="8" fill="#161b22" stroke="#58a6ff" stroke-width="1.2"/>
+  <text x="183" y="280" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="bold">temps CLI</text>
+  <text x="183" y="298" text-anchor="middle" fill="#8b949e" font-size="11">deploys · env vars · monitors</text>
+
+  <!-- CodeNomad -->
+  <rect x="68" y="336" width="230" height="56" rx="8" fill="#161b22" stroke="#3fb950" stroke-width="1.2"/>
+  <text x="183" y="360" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="bold">CodeNomad :9898</text>
+  <text x="183" y="378" text-anchor="middle" fill="#8b949e" font-size="11">browser cockpit · voice · sessions</text>
+
+  <!-- fish tts bridge -->
+  <rect x="68" y="416" width="230" height="56" rx="8" fill="#161b22" stroke="#d29922" stroke-width="1.2"/>
+  <text x="183" y="440" text-anchor="middle" fill="#d29922" font-size="13" font-weight="bold">fish-tts-bridge :8787</text>
+  <text x="183" y="458" text-anchor="middle" fill="#8b949e" font-size="11">OpenAI ↔ Fish Audio translator</text>
+
+  <!-- QEMU microVM -->
+  <rect x="318" y="416" width="228" height="120" rx="8" fill="#161b22" stroke="#8b949e" stroke-dasharray="4 3" stroke-width="1.2"/>
+  <text x="432" y="444" text-anchor="middle" fill="#e6edf3" font-size="13" font-weight="bold">QEMU microVM</text>
+  <text x="432" y="462" text-anchor="middle" fill="#8b949e" font-size="11">~1 MB BusyBox rootfs</text>
+  <text x="432" y="480" text-anchor="middle" fill="#8b949e" font-size="11">TCG emulation · boots in seconds</text>
+  <text x="432" y="500" text-anchor="middle" fill="#8b949e" font-size="11">throwaway shell for risky work</text>
+
+  <!-- CodeNomad LAN note -->
+  <path d="M 68 364 C 30 380, 30 430, 62 452" fill="none" stroke="#3fb950" stroke-width="1.2" marker-end="url(#arr-green)"/>
+  <text x="60" y="500" fill="#3fb950" font-size="11">◄─ LAN browser</text>
+  <text x="60" y="516" fill="#8b949e" font-size="11">https://&lt;device-ip&gt;:9898</text>
+
+  <!-- arrow temps CLI -> Temps PaaS -->
+  <path d="M 298 284 L 646 190" fill="none" stroke="#58a6ff" stroke-width="1.6" marker-end="url(#arr-blue)"/>
+  <text x="470" y="222" text-anchor="middle" fill="#58a6ff" font-size="11">HTTPS + API key</text>
+
+  <!-- arrow bridge -> fish audio -->
+  <path d="M 298 444 L 646 400" fill="none" stroke="#d29922" stroke-width="1.6" marker-end="url(#arr-orange)"/>
+  <text x="470" y="412" text-anchor="middle" fill="#d29922" font-size="11">OpenAI schema → native TTS</text>
+
+  <!-- Temps PaaS box -->
+  <rect x="650" y="140" width="266" height="212" rx="10" fill="#161b22" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="783" y="170" text-anchor="middle" fill="#58a6ff" font-size="15" font-weight="bold">Temps PaaS</text>
+  <text x="783" y="190" text-anchor="middle" fill="#8b949e" font-size="12">up.sahin.tech (VPS)</text>
+  <text x="674" y="220" fill="#e6edf3" font-size="12">▸ git / image deploys</text>
+  <text x="674" y="244" fill="#e6edf3" font-size="12">▸ automatic TLS (Let's Encrypt)</text>
+  <text x="674" y="268" fill="#e6edf3" font-size="12">▸ uptime monitors</text>
+  <text x="674" y="292" fill="#e6edf3" font-size="12">▸ privacy-friendly analytics</text>
+  <text x="674" y="316" fill="#e6edf3" font-size="12">▸ error tracking · request logs</text>
+  <text x="674" y="340" fill="#8b949e" font-size="11">single Rust binary · 9 projects</text>
+
+  <!-- Fish Audio box -->
+  <rect x="650" y="376" width="266" height="92" rx="10" fill="#161b22" stroke="#d29922" stroke-width="1.5"/>
+  <text x="783" y="406" text-anchor="middle" fill="#d29922" font-size="14" font-weight="bold">fish.audio API</text>
+  <text x="783" y="426" text-anchor="middle" fill="#8b949e" font-size="12">model s2.1-pro-free</text>
+  <text x="783" y="446" text-anchor="middle" fill="#8b949e" font-size="12">83 languages · fair-use unlimited</text>
+
+  <!-- footer credit -->
+  <text x="470" y="596" text-anchor="middle" fill="#30363d" font-size="11">built by an AI agent on a phone</text>
+</svg>
