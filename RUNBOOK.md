@@ -83,13 +83,6 @@ Gateway `/healthz`: ok. 9 projects hosted:
 |----|---------|-----------|--------|--------------|---------|
 | 3 | wg | operational | 100% | 0 | – |
 | 4 | wgsec | operational | 100% | 0 | – |
-| 5 | stweb | operational | 100% | 2 (0) | – |
-| 6 | trae | operational | 100% | 4 (0) | – |
-| 7 | trae-d03f80 | operational | 0% ⚠ 1 incident | 4 (0) | completed |
-| 8 | trae-582d96 | **partial_outage** | 0% ⚠ 1 incident | 6 (0) | cancelled |
-| 9 | argus | operational | 100% | 2 (0) | – |
-| 10 | nui | operational | 100% | 3 (0) | – |
-| 11 | fbb | operational | 100% | 1 (0) | – |
 
 Notes:
 - Monitor states report `unknown` platform-side despite 100%/0% uptime — monitor probes may be misconfigured.
