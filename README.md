@@ -3,7 +3,7 @@
 > **A pocket-sized DevOps workspace.** One Pixel 8a phone, one Debian VM, one AI operator — running a self-hosted PaaS, a browser cockpit for AI coding sessions, neural text-to-speech, and a QEMU microVM sandbox.
 >
 > Everything you see here runs *on the phone*. No cloud bills, no rack, no ops team.
-
+> A short tale with an from GLM-5.3-Flash (0x alpha)
 ---
 
 ## The pitch
